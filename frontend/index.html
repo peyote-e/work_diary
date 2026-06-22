@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Work Journal</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e5e5e3;
+    --border-hover: #d0d0cc;
+    --text: #1a1a18;
+    --text-muted: #6b6b67;
+    --text-faint: #a0a09c;
+    --win: #3B6D11;
+    --win-bg: #EAF3DE;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6;
+  }
+  .container { max-width: 640px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  /* Login screen */
+  #login-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 80vh; text-align: center;
+  }
+  #login-screen h1 { font-size: 22px; margin-bottom: 6px; }
+  #login-screen p { color: var(--text-muted); font-size: 14px; margin-bottom: 1.5rem; }
+  #login-screen input {
+    width: 260px; padding: 12px 14px; font-size: 15px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); color: var(--text); margin-bottom: 10px; text-align: center;
+  }
+  #login-error { color: #A32D2D; font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  .header { margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: flex-start; }
+  .header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .header .date { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+  .logout { font-size: 13px; color: var(--text-muted); cursor: pointer; text-decoration: underline; }
+  .logout:hover { color: var(--text); }
+
+  .progress { display: flex; gap: 6px; margin-bottom: 2rem; }
+  .step { height: 2px; flex: 1; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+  .step.done { background: var(--text); }
+  .step.active { background: var(--text-muted); }
+
+  .phase { display: none; }
+  .phase.active { display: block; }
+
+  h2 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+  .sub { font-size: 14px; color: var(--text-muted); margin-bottom: 1.25rem; }
+
+  textarea, input[type=text] {
+    width: 100%; padding: 12px 14px; font-size: 15px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); color: var(--text); resize: vertical;
+    transition: border-color 0.15s;
+  }
+  textarea { min-height: 130px; line-height: 1.6; }
+  textarea:focus, input[type=text]:focus { outline: none; border-color: var(--border-hover); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; background: var(--surface); color: var(--text);
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .btn:hover { background: var(--bg); border-color: var(--border-hover); }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn-primary:hover { opacity: 0.85; background: var(--text); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; margin-top: 1.25rem; flex-wrap: wrap; }
+
+  .q-card {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 10px; background: var(--surface);
+  }
+  .q-label { font-size: 11px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .q-text { font-size: 15px; color: var(--text); margin-bottom: 10px; }
+  .q-card textarea { min-height: 65px; font-size: 14px; }
+
+  .loader { display: flex; gap: 5px; align-items: center; padding: 14px 0; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); animation: pulse 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,80%,100%{opacity:0.25} 40%{opacity:1} }
+
+  .section-label { font-size: 11px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin: 1.5rem 0 0.6rem; }
+  .output-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    font-size: 14px; line-height: 1.7; color: var(--text);
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .tag { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; margin-right: 5px; margin-bottom: 5px; background: var(--win-bg); color: var(--win); }
+
+  .notion-status { font-size: 13px; margin-top: 8px; }
+  .notion-status.ok { color: var(--win); }
+  .notion-status.err { color: #A32D2D; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+  .hint { font-size: 12px; color: var(--text-faint); margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <h1>Work Journal</h1>
+  <p>Enter your password to continue</p>
+  <input type="password" id="login-password" placeholder="Password" onkeydown="if(event.key==='Enter') doLogin()" />
+  <button class="btn btn-primary" onclick="doLogin()">Unlock →</button>
+  <div id="login-error"></div>
+  <p class="hint" id="wake-hint" style="display:none;">First load can take ~30s — the server is waking up.</p>
+</div>
+
+<!-- MAIN APP -->
+<div class="container" id="app-screen" style="display:none;">
+
+  <div class="header">
+    <div>
+      <h1>Work Journal</h1>
+      <div class="date" id="today-date"></div>
+    </div>
+    <div class="logout" onclick="logout()">Log out</div>
+  </div>
+
+  <div class="progress">
+    <div class="step active" id="step1"></div>
+    <div class="step" id="step2"></div>
+    <div class="step" id="step3"></div>
+  </div>
+
+  <div class="phase active" id="phase1">
+    <h2>What did you work on today?</h2>
+    <p class="sub">Dump everything — tasks, conversations, blockers, ideas. Raw is fine.</p>
+    <textarea id="dump" placeholder="e.g. finished the onboarding flow, had a tricky conversation with my manager about timelines, fixed a weird bug in the auth module..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="continue-btn" onclick="startFollowUp()">Continue →</button>
+    </div>
+  </div>
+
+  <div class="phase" id="phase2">
+    <h2>A few follow-up questions</h2>
+    <p class="sub">Answer what feels relevant — skip the rest.</p>
+    <div id="questions-container"></div>
+    <div class="btn-row" id="fup-btns" style="display:none;">
+      <button class="btn btn-primary" onclick="generateSummary()">Generate entry →</button>
+      <button class="btn" onclick="skipToSummary()">Skip questions</button>
+    </div>
+  </div>
+
+  <div class="phase" id="phase3">
+    <h2>Today's entry</h2>
+    <p class="sub">Review your entry and export to Notion.</p>
+    <div id="summary-container"></div>
+
+    <hr class="divider">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <span style="font-size:14px; font-weight:500;">Export to Notion</span>
+      <span style="font-size:12px; color:var(--text-muted);">Creates 3 entries (Wins · Plan · Journal)</span>
+    </div>
+    <button class="btn btn-primary" onclick="exportToNotion()" id="export-btn">Export →</button>
+    <div class="notion-status" id="notion-status"></div>
+
+    <div class="btn-row" style="margin-top:1.5rem;">
+      <button class="btn" onclick="restart()">↺ New entry</button>
+      <button class="btn" onclick="copyMarkdown()">Copy as markdown</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Configure this to your deployed backend URL ───────────
+const API_BASE = "__BACKEND_URL__"; // e.g. "https://work-journal-api.onrender.com"
+
+// ── Session ────────────────────────────────────────────────
+function getToken() { return localStorage.getItem('wj_token'); }
+function setToken(t) { localStorage.setItem('wj_token', t); }
+function clearToken() { localStorage.removeItem('wj_token'); }
+
+async function doLogin() {
+  const pw = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+  const wakeHint = document.getElementById('wake-hint');
+  err.textContent = '';
+  wakeHint.style.display = 'block';
+  try {
+    const resp = await fetch(`${API_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    wakeHint.style.display = 'none';
+    if (!resp.ok) { err.textContent = 'Wrong password.'; return; }
+    const data = await resp.json();
+    setToken(data.token);
+    showApp();
+  } catch (e) {
+    wakeHint.style.display = 'none';
+    err.textContent = 'Could not reach server. Try again in a moment.';
+  }
+}
+
+function logout() {
+  clearToken();
+  location.reload();
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+}
+
+// Check existing session on load
+window.addEventListener('DOMContentLoaded', () => {
+  if (getToken()) showApp();
+});
+
+// ── Authenticated fetch helper ────────────────────────────
+async function api(path, body) {
+  const resp = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+    body: JSON.stringify(body)
+  });
+  if (resp.status === 401) { clearToken(); location.reload(); throw new Error('Session expired'); }
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.detail || 'Request failed');
+  return data;
+}
+
+// ── State ──────────────────────────────────────────────────
+let state = { dump: '', questions: [], answers: {}, summary: null };
+
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById('step'+i);
+    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+}
+
+// ── Phase 1 → 2 ────────────────────────────────────────────
+async function startFollowUp() {
+  const dump = document.getElementById('dump').value.trim();
+  if (!dump) { alert('Write something first!'); return; }
+  state.dump = dump;
+
+  document.getElementById('phase1').classList.remove('active');
+  document.getElementById('phase2').classList.add('active');
+  setStep(2);
+
+  const container = document.getElementById('questions-container');
+  container.innerHTML = '<div class="loader"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+
+  try {
+    const data = await api('/followup', { dump });
+    state.questions = data.questions;
+
+    container.innerHTML = '';
+    state.questions.forEach((q, i) => {
+      const card = document.createElement('div');
+      card.className = 'q-card';
+      card.innerHTML = `<div class="q-label">Question ${i+1}</div><div class="q-text">${q}</div><textarea id="q${i}" placeholder="Optional — leave blank to skip"></textarea>`;
+      container.appendChild(card);
+    });
+    document.getElementById('fup-btns').style.display = 'flex';
+  } catch(e) {
+    container.innerHTML = `<p style="color:#A32D2D; font-size:14px;">Error: ${e.message}</p>`;
+  }
+}
+
+function skipToSummary() {
+  state.questions = [];
+  generateSummary();
+}
+
+// ── Phase 2 → 3 ────────────────────────────────────────────
+async function generateSummary() {
+  state.answers = {};
+  state.questions.forEach((q, i) => {
+    const val = document.getElementById('q'+i)?.value.trim();
+    if (val) state.answers[q] = val;
+  });
+
+  document.getElementById('phase2').classList.remove('active');
+  document.getElementById('phase3').classList.add('active');
+  setStep(3);
+
+  const container = document.getElementById('summary-container');
+  container.innerHTML = '<div class="loader"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+
+  try {
+    const s = await api('/summary', { dump: state.dump, answers: state.answers });
+    state.summary = s;
+
+    container.innerHTML = `
+      <div style="margin-bottom:12px;">${(s.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      <div class="section-label">🏆 Wins</div>
+      <div class="output-block">${(s.wins||[]).map(w=>'• '+w).join('\n')}</div>
+      <div class="section-label">📅 Plan for tomorrow</div>
+      <div class="output-block">${(s.plan||[]).map(p=>'• '+p).join('\n')}</div>
+      <div class="section-label">📓 Journal</div>
+      <div class="output-block">${s.journal||''}</div>
+    `;
+  } catch(e) {
+    container.innerHTML = `<p style="color:#A32D2D; font-size:14px;">Error: ${e.message}</p>`;
+  }
+}
+
+// ── Notion export ──────────────────────────────────────────
+async function exportToNotion() {
+  const status = document.getElementById('notion-status');
+  const btn = document.getElementById('export-btn');
+  const dateStr = new Date().toISOString().split('T')[0];
+
+  btn.disabled = true; btn.textContent = 'Exporting…';
+  status.textContent = ''; status.className = 'notion-status';
+
+  try {
+    await api('/export-notion', {
+      wins: state.summary.wins || [],
+      plan: state.summary.plan || [],
+      journal: state.summary.journal || '',
+      tags: state.summary.tags || [],
+      date: dateStr
+    });
+    status.textContent = '✓ Exported 3 entries to Notion (Wins · Plan · Journal)';
+    status.className = 'notion-status ok';
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    status.className = 'notion-status err';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Export →';
+  }
+}
+
+// ── Utilities ──────────────────────────────────────────────
+function copyMarkdown() {
+  const s = state.summary;
+  const dateStr = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const md = `# Work Journal – ${dateStr}\n\n## Wins\n${(s.wins||[]).map(w=>'- '+w).join('\n')}\n\n## Plan for tomorrow\n${(s.plan||[]).map(p=>'- '+p).join('\n')}\n\n## Journal\n${s.journal||''}\n\n**Tags:** ${(s.tags||[]).join(', ')}`;
+  navigator.clipboard.writeText(md).then(() => {
+    const btn = event.target; btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = 'Copy as markdown', 2000);
+  });
+}
+
+function restart() {
+  state = { dump: '', questions: [], answers: {}, summary: null };
+  document.getElementById('dump').value = '';
+  document.getElementById('phase3').classList.remove('active');
+  document.getElementById('summary-container').innerHTML = '';
+  document.getElementById('notion-status').textContent = '';
+  document.getElementById('phase1').classList.add('active');
+  setStep(1);
+}
+</script>
+</body>
+</html>
